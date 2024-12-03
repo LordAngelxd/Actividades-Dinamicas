@@ -1,0 +1,301 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Examen de Informática</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            line-height: 1.6;
+            color: #333;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+            background-color: #f4f4f4;
+        }
+        h1 {
+            text-align: center;
+            color: #2c3e50;
+        }
+        #timer {
+            text-align: center;
+            font-size: 1.2em;
+            margin-bottom: 20px;
+        }
+        #question-container {
+            background-color: #fff;
+            border-radius: 8px;
+            padding: 20px;
+            margin-bottom: 20px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        .question {
+            margin-bottom: 15px;
+        }
+        .options {
+            display: flex;
+            flex-direction: column;
+        }
+        .option {
+            margin: 5px 0;
+        }
+        button {
+            background-color: #3498db;
+            color: #fff;
+            border: none;
+            padding: 10px 15px;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 1em;
+            transition: background-color 0.3s;
+        }
+        button:hover {
+            background-color: #2980b9;
+        }
+        #result {
+            text-align: center;
+            font-size: 1.2em;
+            margin-top: 20px;
+        }
+        @media (max-width: 600px) {
+            body {
+                padding: 10px;
+            }
+            button {
+                width: 100%;
+                margin-bottom: 10px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <h1>Examen de Informática</h1>
+    <div id="timer">Tiempo restante: 10:00</div>
+    <div id="question-container"></div>
+    <button id="next-btn">Siguiente</button>
+    <button id="submit-btn" style="display: none;">Finalizar examen</button>
+    <div id="result"></div>
+    <button id="restart-btn" style="display: none;">Comenzar desde el inicio</button>
+    <button id="abandon-btn" style="display: none;">Abandonar</button>
+
+    <script>
+        const questions = [
+            {
+                question: "¿HTML es un lenguaje de programación?",
+                options: ["Sí", "No", "Ninguna de las anteriores"],
+                correctAnswer: "No"
+            },
+            {
+                question: "La sigla CPU significa Unidad Central de Procesamiento.",
+                options: ["Verdadero", "Falso"],
+                correctAnswer: "Verdadero"
+            },
+            {
+                question: "¿Python es un lenguaje de programación de bajo nivel?",
+                options: ["Sí", "No", "Ninguna de las anteriores"],
+                correctAnswer: "No"
+            },
+            {
+                question: "RAM significa Memoria de Acceso Aleatorio.",
+                options: ["Verdadero", "Falso"],
+                correctAnswer: "Verdadero"
+            },
+            {
+                question: "¿Java y JavaScript son el mismo lenguaje de programación?",
+                options: ["Sí", "No", "Ninguna de las anteriores"],
+                correctAnswer: "No"
+            },
+            {
+                question: "Un byte está compuesto por 8 bits.",
+                options: ["Verdadero", "Falso"],
+                correctAnswer: "Verdadero"
+            },
+            {
+                question: "¿El sistema operativo es un software?",
+                options: ["Sí", "No", "Ninguna de las anteriores"],
+                correctAnswer: "Sí"
+            },
+            {
+                question: "HTTP significa Protocolo de Transferencia de Hipertexto.",
+                options: ["Verdadero", "Falso"],
+                correctAnswer: "Verdadero"
+            },
+            {
+                question: "¿SQL es un lenguaje de programación orientado a objetos?",
+                options: ["Sí", "No", "Ninguna de las anteriores"],
+                correctAnswer: "No"
+            },
+            {
+                question: "El disco duro es un tipo de memoria volátil.",
+                options: ["Verdadero", "Falso"],
+                correctAnswer: "Falso"
+            },
+            {
+                question: "¿CSS se utiliza para definir la estructura de una página web?",
+                options: ["Sí", "No", "Ninguna de las anteriores"],
+                correctAnswer: "No"
+            },
+            {
+                question: "Un algoritmo es un conjunto de pasos para resolver un problema.",
+                options: ["Verdadero", "Falso"],
+                correctAnswer: "Verdadero"
+            },
+            {
+                question: "¿El lenguaje binario está compuesto solo por 0 y 1?",
+                options: ["Sí", "No", "Ninguna de las anteriores"],
+                correctAnswer: "Sí"
+            },
+            {
+                question: "La nube (cloud computing) se refiere al almacenamiento físico de datos en las nubes atmosféricas.",
+                options: ["Verdadero", "Falso"],
+                correctAnswer: "Falso"
+            },
+            {
+                question: "¿Un firewall es un dispositivo de hardware exclusivamente?",
+                options: ["Sí", "No", "Ninguna de las anteriores"],
+                correctAnswer: "No"
+            },
+            {
+                question: "IPv4 e IPv6 son protocolos de Internet.",
+                options: ["Verdadero", "Falso"],
+                correctAnswer: "Verdadero"
+            },
+            {
+                question: "¿El phishing es una técnica para mejorar la seguridad informática?",
+                options: ["Sí", "No", "Ninguna de las anteriores"],
+                correctAnswer: "No"
+            },
+            {
+                question: "Un pixel es la unidad más pequeña de una imagen digital.",
+                options: ["Verdadero", "Falso"],
+                correctAnswer: "Verdadero"
+            },
+            {
+                question: "¿HTTPS es menos seguro que HTTP?",
+                options: ["Sí", "No", "Ninguna de las anteriores"],
+                correctAnswer: "No"
+            },
+            {
+                question: "El código abierto (open source) significa que el software es gratuito.",
+                options: ["Verdadero", "Falso"],
+                correctAnswer: "Falso"
+            }
+        ];
+
+        let currentQuestionIndex = 0;
+        let userAnswers = [];
+        let timeLeft = 600; // 10 minutes in seconds
+        let timerInterval;
+
+        const questionContainer = document.getElementById('question-container');
+        const nextButton = document.getElementById('next-btn');
+        const submitButton = document.getElementById('submit-btn');
+        const resultDiv = document.getElementById('result');
+        const restartButton = document.getElementById('restart-btn');
+        const abandonButton = document.getElementById('abandon-btn');
+        const timerDisplay = document.getElementById('timer');
+
+        function displayQuestion() {
+            const question = questions[currentQuestionIndex];
+            let optionsHTML = '';
+            question.options.forEach((option, index) => {
+                optionsHTML += `
+                    <div class="option">
+                        <input type="radio" id="option${index}" name="answer" value="${option}">
+                        <label for="option${index}">${option}</label>
+                    </div>
+                `;
+            });
+
+            questionContainer.innerHTML = `
+                <div class="question">
+                    <h2>Pregunta ${currentQuestionIndex + 1} de ${questions.length}</h2>
+                    <p>${question.question}</p>
+                    <div class="options">
+                        ${optionsHTML}
+                    </div>
+                </div>
+            `;
+        }
+
+        function nextQuestion() {
+            const selectedOption = document.querySelector('input[name="answer"]:checked');
+            if (selectedOption) {
+                userAnswers[currentQuestionIndex] = selectedOption.value;
+                currentQuestionIndex++;
+                if (currentQuestionIndex < questions.length) {
+                    if (currentQuestionIndex % 5 === 0) {
+                        alert('Has completado 5 preguntas más. ¡Sigue así!');
+                    }
+                    displayQuestion();
+                } else {
+                    finishExam();
+                }
+            } else {
+                alert('Por favor, selecciona una respuesta antes de continuar.');
+            }
+        }
+
+        function finishExam() {
+            clearInterval(timerInterval);
+            nextButton.style.display = 'none';
+            submitButton.style.display = 'none';
+            restartButton.style.display = 'inline-block';
+            abandonButton.style.display = 'inline-block';
+
+            let correctAnswers = 0;
+            questions.forEach((question, index) => {
+                if (userAnswers[index] === question.correctAnswer) {
+                    correctAnswers++;
+                }
+            });
+
+            const percentage = (correctAnswers / questions.length) * 100;
+            const status = percentage > 50 ? 'Aprobado' : 'Reprobado';
+
+            resultDiv.innerHTML = `
+                <h2>Resultado del examen</h2>
+                <p>Respuestas correctas: ${correctAnswers} de ${questions.length}</p>
+                <p>Porcentaje: ${percentage.toFixed(2)}%</p>
+                <p>Estado: ${status}</p>
+            `;
+        }
+
+        function updateTimer() {
+            const minutes = Math.floor(timeLeft / 60);
+            const seconds = timeLeft % 60;
+            timerDisplay.textContent = `Tiempo restante: ${minutes}:${seconds < 10 ? '0' : ''}${seconds}`;
+            if (timeLeft === 0) {
+                finishExam();
+            } else {
+                timeLeft--;
+            }
+        }
+
+        function startExam() {
+            currentQuestionIndex = 0;
+            userAnswers = [];
+            timeLeft = 600;
+            displayQuestion();
+            nextButton.style.display = 'inline-block';
+            submitButton.style.display = 'none';
+            restartButton.style.display = 'none';
+            abandonButton.style.display = 'none';
+            resultDiv.innerHTML = '';
+            timerInterval = setInterval(updateTimer, 1000);
+        }
+
+        nextButton.addEventListener('click', nextQuestion);
+        submitButton.addEventListener('click', finishExam);
+        restartButton.addEventListener('click', startExam);
+        abandonButton.addEventListener('click', () => {
+            if (confirm('¿Estás seguro de que quieres abandonar el examen?')) {
+                window.location.reload();
+            }
+        });
+
+        startExam();
+    </script>
+</body>
+</html>

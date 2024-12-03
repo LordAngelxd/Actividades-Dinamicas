@@ -1,0 +1,222 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Adivina la Palabra - Informática</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            margin: 0;
+            background-color: #f0f0f0;
+        }
+        #game-container {
+            width: 400px;
+            height: 400px;
+            background-color: #fff;
+            border-radius: 10px;
+            box-shadow: 0 0 10px rgba(0,0,0,0.1);
+            padding: 20px;
+            box-sizing: border-box;
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+        }
+        h1 {
+            text-align: center;
+            margin-top: 0;
+        }
+        #word-display {
+            font-size: 24px;
+            text-align: center;
+            letter-spacing: 5px;
+            margin-bottom: 10px;
+        }
+        #hint {
+            text-align: center;
+            font-style: italic;
+            margin-bottom: 10px;
+        }
+        #guess-input {
+            width: 100%;
+            padding: 5px;
+            margin-bottom: 10px;
+        }
+        #submit-guess {
+            width: 100%;
+            padding: 10px;
+            background-color: #4CAF50;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+        }
+        #game-info {
+            display: flex;
+            justify-content: space-between;
+            margin-top: 10px;
+        }
+    </style>
+</head>
+<body>
+    <div id="game-container">
+        <h1>Adivina la Palabra</h1>
+        <div id="word-display"></div>
+        <div id="hint"></div>
+        <input type="text" id="guess-input" placeholder="Escribe tu respuesta">
+        <button id="submit-guess">Adivinar</button>
+        <div id="game-info">
+            <span id="attempts">Intentos: 8</span>
+            <span id="timer">Tiempo: 2:00</span>
+            <span id="score">Puntos: 0</span>
+        </div>
+    </div>
+    <script>
+        const words = [
+            {word: "ALGORITMO", hint: "Conjunto de pasos para resolver un problema"},
+            {word: "VARIABLE", hint: "Espacio en memoria para almacenar datos"},
+            {word: "FUNCION", hint: "Bloque de código reutilizable"},
+            {word: "BUCLE", hint: "Estructura para repetir código"},
+            {word: "ARRAY", hint: "Estructura de datos para almacenar múltiples elementos"},
+            {word: "OBJETO", hint: "Entidad con propiedades y métodos"},
+            {word: "CLASE", hint: "Plantilla para crear objetos"},
+            {word: "HERENCIA", hint: "Mecanismo para crear nuevas clases basadas en existentes"},
+            {word: "COMPILADOR", hint: "Traduce código fuente a lenguaje máquina"},
+            {word: "DEPURACION", hint: "Proceso de encontrar y corregir errores"},
+            {word: "API", hint: "Interfaz para comunicación entre aplicaciones"},
+            {word: "FRAMEWORK", hint: "Estructura predefinida para desarrollar software"},
+            {word: "SERVIDOR", hint: "Computadora que proporciona recursos a otras"},
+            {word: "CLIENTE", hint: "Computadora que solicita recursos a un servidor"},
+            {word: "PROTOCOLO", hint: "Conjunto de reglas para comunicación en red"},
+            {word: "ENCRIPTACION", hint: "Proceso de convertir información en código secreto"},
+            {word: "FIREWALL", hint: "Sistema de seguridad para controlar el tráfico de red"},
+            {word: "CACHE", hint: "Memoria de acceso rápido para datos frecuentes"},
+            {word: "KERNEL", hint: "Núcleo del sistema operativo"},
+            {word: "THREAD", hint: "Unidad básica de ejecución en un programa"},
+            {word: "RECURSION", hint: "Técnica donde una función se llama a sí misma"},
+            {word: "INTERFAZ", hint: "Punto de interacción entre componentes"},
+            {word: "COMPILACION", hint: "Proceso de convertir código fuente a ejecutable"},
+            {word: "LIBRERIA", hint: "Conjunto de funciones predefinidas"},
+            {word: "PARAMETRO", hint: "Valor pasado a una función"},
+            {word: "PUNTERO", hint: "Variable que almacena la dirección de memoria"},
+            {word: "STACK", hint: "Estructura de datos LIFO"},
+            {word: "QUEUE", hint: "Estructura de datos FIFO"},
+            {word: "HASH", hint: "Función que mapea datos de tamaño variable a tamaño fijo"},
+            {word: "BOOLEAN", hint: "Tipo de dato con dos valores posibles"},
+            {word: "INTEGER", hint: "Tipo de dato para números enteros"},
+            {word: "FLOAT", hint: "Tipo de dato para números con decimales"},
+            {word: "STRING", hint: "Tipo de dato para cadenas de caracteres"},
+            {word: "BIT", hint: "Unidad más pequeña de información digital"},
+            {word: "BYTE", hint: "Unidad de información digital de 8 bits"},
+            {word: "PIXEL", hint: "Unidad más pequeña de una imagen digital"},
+            {word: "ROUTER", hint: "Dispositivo que dirige paquetes de datos en una red"},
+            {word: "SWITCH", hint: "Dispositivo que conecta múltiples dispositivos en una red"},
+            {word: "MODEM", hint: "Dispositivo que modula y demodula señales"},
+            {word: "WIFI", hint: "Tecnología de red inalámbrica"},
+            {word: "BLUETOOTH", hint: "Tecnología de comunicación inalámbrica de corto alcance"},
+            {word: "USB", hint: "Estándar de conexión para dispositivos"},
+            {word: "CPU", hint: "Unidad central de procesamiento"},
+            {word: "GPU", hint: "Unidad de procesamiento gráfico"},
+            {word: "RAM", hint: "Memoria de acceso aleatorio"},
+            {word: "ROM", hint: "Memoria de solo lectura"},
+            {word: "SSD", hint: "Unidad de estado sólido"},
+            {word: "HDD", hint: "Disco duro"},
+            {word: "BIOS", hint: "Sistema básico de entrada/salida"},
+            {word: "DRIVER", hint: "Software que controla un dispositivo"}
+        ];
+
+        let currentWordIndex = 0;
+        let currentWord = "";
+        let displayedWord = "";
+        let attempts = 8;
+        let score = 0;
+        let timer;
+        let timeLeft = 120;
+
+        const wordDisplay = document.getElementById("word-display");
+        const hintElement = document.getElementById("hint");
+        const guessInput = document.getElementById("guess-input");
+        const submitGuess = document.getElementById("submit-guess");
+        const attemptsDisplay = document.getElementById("attempts");
+        const timerDisplay = document.getElementById("timer");
+        const scoreDisplay = document.getElementById("score");
+
+        function shuffleArray(array) {
+            for (let i = array.length - 1; i > 0; i--) {
+                const j = Math.floor(Math.random() * (i + 1));
+                [array[i], array[j]] = [array[j], array[i]];
+            }
+        }
+
+        function startGame() {
+            shuffleArray(words);
+            nextWord();
+        }
+
+        function nextWord() {
+            if (currentWordIndex >= 10) {
+                endGame();
+                return;
+            }
+
+            currentWord = words[currentWordIndex].word;
+            displayedWord = "_".repeat(currentWord.length);
+            wordDisplay.textContent = displayedWord;
+            hintElement.textContent = "Pista: " + words[currentWordIndex].hint;
+            attempts = 8;
+            attemptsDisplay.textContent = "Intentos: " + attempts;
+            timeLeft = 120;
+            if (timer) clearInterval(timer);
+            timer = setInterval(updateTimer, 1000);
+            currentWordIndex++;
+        }
+
+        function updateTimer() {
+            const minutes = Math.floor(timeLeft / 60);
+            const seconds = timeLeft % 60;
+            timerDisplay.textContent = `Tiempo: ${minutes}:${seconds.toString().padStart(2, '0')}`;
+            if (timeLeft === 0) {
+                clearInterval(timer);
+                nextWord();
+            }
+            timeLeft--;
+        }
+
+        function checkGuess() {
+            const guess = guessInput.value.toUpperCase();
+            guessInput.value = "";
+
+            if (guess === currentWord) {
+                score += 2;
+                scoreDisplay.textContent = "Puntos: " + score;
+                nextWord();
+            } else {
+                attempts--;
+                attemptsDisplay.textContent = "Intentos: " + attempts;
+                if (attempts === 0) {
+                    nextWord();
+                }
+            }
+        }
+
+        function endGame() {
+            clearInterval(timer);
+            const message = score > 10 ? "¡Felicidades! Has aprobado." : "Lo siento, has reprobado.";
+            alert(`Juego terminado. ${message} Tu puntaje final es: ${score}`);
+        }
+
+        submitGuess.addEventListener("click", checkGuess);
+        guessInput.addEventListener("keypress", function(event) {
+            if (event.key === "Enter") {
+                checkGuess();
+            }
+        });
+
+        startGame();
+    </script>
+</body>
+</html>

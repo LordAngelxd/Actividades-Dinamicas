@@ -1,0 +1,339 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Sopa de Letras Informática</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background-color: #f0f0f0;
+            margin: 0;
+            padding: 20px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+        }
+        .container {
+            background-color: white;
+            border-radius: 10px;
+            box-shadow: 0 0 10px rgba(0,0,0,0.1);
+            padding: 20px;
+            max-width: 800px;
+            width: 100%;
+        }
+        h1 {
+            color: #333;
+            text-align: center;
+        }
+        .game-info {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 20px;
+        }
+        .word-list {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+            margin-bottom: 20px;
+        }
+        .word {
+            background-color: #e0e0e0;
+            padding: 5px 10px;
+            border-radius: 5px;
+            font-size: 14px;
+        }
+        .word.found {
+            background-color: #4CAF50;
+            color: white;
+        }
+        .grid {
+            display: grid;
+            grid-template-columns: repeat(15, 1fr);
+            gap: 2px;
+            margin-bottom: 20px;
+        }
+        .cell {
+            width: 25px;
+            height: 25px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            border: 1px solid #ddd;
+            cursor: pointer;
+            user-select: none;
+            font-size: 12px;
+        }
+        .cell.selected {
+            background-color: #ff6b6b;
+            color: white;
+        }
+        .cell.correct {
+            background-color: #4CAF50;
+            color: white;
+        }
+        button {
+            background-color: #4CAF50;
+            border: none;
+            color: white;
+            padding: 10px 20px;
+            text-align: center;
+            text-decoration: none;
+            display: inline-block;
+            font-size: 16px;
+            margin: 4px 2px;
+            cursor: pointer;
+            border-radius: 5px;
+        }
+        @media (max-width: 600px) {
+            .container {
+                padding: 10px;
+            }
+            .cell {
+                width: 20px;
+                height: 20px;
+                font-size: 10px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Sopa de Letras Informática</h1>
+        <div class="game-info">
+            <div>Tiempo: <span id="timer">5:00</span></div>
+            <div>Puntos: <span id="score">0</span></div>
+        </div>
+        <div id="wordList" class="word-list"></div>
+        <div id="grid" class="grid"></div>
+        <button id="refreshButton">Refrescar</button>
+    </div>
+
+    <script>
+        const words = [
+            'ALGORITMO', 'BINARIO', 'COMPILADOR', 'DATOS', 'ENCRIPTAR',
+            'FIREWALL', 'GIGABYTE', 'HARDWARE', 'INTERNET', 'JAVASCRIPT',
+            'KERNEL', 'LENGUAJE', 'MEMORIA', 'NETWORK', 'OPERATIVO',
+            'PROGRAMA', 'QUERY', 'ROUTER', 'SOFTWARE', 'TERMINAL',
+            'ARCHIVO', 'BACKUP', 'CACHE', 'DOMINIO', 'ETHERNET',
+            'FRAMEWORK', 'GATEWAY', 'HOSTING', 'INTERFAZ', 'JAVA',
+            'KILOBYTE', 'LINUX', 'MALWARE', 'NUBE', 'OPEN SOURCE',
+            'PROTOCOLO', 'QR CODE', 'RAM', 'SERVIDOR', 'TERABYTE',
+            'USB', 'VIRTUAL', 'WEB', 'XML', 'YOUTUBE',
+            'ZIP', 'API', 'BUG', 'CPU', 'DNS'
+        ];
+
+        let selectedWords = [];
+        let grid = [];
+        let selectedCells = [];
+        let score = 0;
+        let timeLeft = 300; // 5 minutes in seconds
+
+        const gridSize = 15;
+        const wordListElement = document.getElementById('wordList');
+        const gridElement = document.getElementById('grid');
+        const scoreElement = document.getElementById('score');
+        const timerElement = document.getElementById('timer');
+        const refreshButton = document.getElementById('refreshButton');
+
+        function initializeGame() {
+            selectedWords = selectRandomWords(words, 10);
+            grid = createEmptyGrid(gridSize);
+            placeWordsInGrid(selectedWords, grid);
+            fillEmptyCells(grid);
+            renderGrid(grid);
+            renderWordList(selectedWords);
+            score = 0;
+            scoreElement.textContent = score;
+            timeLeft = 300;
+            updateTimer();
+        }
+
+        function selectRandomWords(wordList, count) {
+            const shuffled = [...wordList].sort(() => 0.5 - Math.random());
+            return shuffled.slice(0, count);
+        }
+
+        function createEmptyGrid(size) {
+            return Array(size).fill().map(() => Array(size).fill(''));
+        }
+
+        function placeWordsInGrid(words, grid) {
+            words.forEach(word => {
+                let placed = false;
+                while (!placed) {
+                    const direction = ['horizontal', 'vertical', 'diagonal'][Math.floor(Math.random() * 3)];
+                    const row = Math.floor(Math.random() * grid.length);
+                    const col = Math.floor(Math.random() * grid[0].length);
+                    if (canPlaceWord(word, row, col, direction, grid)) {
+                        placeWord(word, row, col, direction, grid);
+                        placed = true;
+                    }
+                }
+            });
+        }
+
+        function canPlaceWord(word, row, col, direction, grid) {
+            const directionVectors = {
+                'horizontal': [0, 1],
+                'vertical': [1, 0],
+                'diagonal': [1, 1]
+            };
+            const [dy, dx] = directionVectors[direction];
+
+            if (row + word.length * dy > grid.length || col + word.length * dx > grid[0].length) return false;
+
+            for (let i = 0; i < word.length; i++) {
+                if (grid[row + i * dy][col + i * dx] !== '' && grid[row + i * dy][col + i * dx] !== word[i]) return false;
+            }
+            return true;
+        }
+
+        function placeWord(word, row, col, direction, grid) {
+            const directionVectors = {
+                'horizontal': [0, 1],
+                'vertical': [1, 0],
+                'diagonal': [1, 1]
+            };
+            const [dy, dx] = directionVectors[direction];
+
+            for (let i = 0; i < word.length; i++) {
+                grid[row + i * dy][col + i * dx] = word[i];
+            }
+        }
+
+        function fillEmptyCells(grid) {
+            const letters = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ';
+            for (let i = 0; i < grid.length; i++) {
+                for (let j = 0; j < grid[i].length; j++) {
+                    if (grid[i][j] === '') {
+                        grid[i][j] = letters[Math.floor(Math.random() * letters.length)];
+                    }
+                }
+            }
+        }
+
+        function renderGrid(grid) {
+            gridElement.innerHTML = '';
+            for (let i = 0; i < grid.length; i++) {
+                for (let j = 0; j < grid[i].length; j++) {
+                    const cell = document.createElement('div');
+                    cell.className = 'cell';
+                    cell.textContent = grid[i][j];
+                    cell.dataset.row = i;
+                    cell.dataset.col = j;
+                    cell.addEventListener('click', handleCellClick);
+                    gridElement.appendChild(cell);
+                }
+            }
+        }
+
+        function renderWordList(words) {
+            wordListElement.innerHTML = '';
+            words.forEach(word => {
+                const wordElement = document.createElement('div');
+                wordElement.className = 'word';
+                wordElement.textContent = word;
+                wordListElement.appendChild(wordElement);
+            });
+        }
+
+        function handleCellClick(event) {
+            const cell = event.target;
+            const row = parseInt(cell.dataset.row);
+            const col = parseInt(cell.dataset.col);
+
+            if (selectedCells.length === 0 || isAdjacent(selectedCells[selectedCells.length - 1], { row, col })) {
+                toggleCellSelection(cell);
+                checkWord();
+            }
+        }
+
+        function isAdjacent(cell1, cell2) {
+            const rowDiff = Math.abs(cell1.row - cell2.row);
+            const colDiff = Math.abs(cell1.col - cell2.col);
+            return (rowDiff <= 1 && colDiff <= 1) && (rowDiff + colDiff > 0);
+        }
+
+        function toggleCellSelection(cell) {
+            const index = selectedCells.findIndex(c => c.row === parseInt(cell.dataset.row) && c.col === parseInt(cell.dataset.col));
+            if (index === -1) {
+                selectedCells.push({ row: parseInt(cell.dataset.row), col: parseInt(cell.dataset.col), element: cell });
+                cell.classList.add('selected');
+            } else {
+                selectedCells.splice(index);
+                cell.classList.remove('selected');
+            }
+        }
+
+        function checkWord() {
+            const selectedWord = selectedCells.map(cell => cell.element.textContent).join('');
+            const reversedWord = selectedWord.split('').reverse().join('');
+            
+            const foundWordIndex = selectedWords.findIndex(word => word === selectedWord || word === reversedWord);
+            
+            if (foundWordIndex !== -1) {
+                markWordAsFound(selectedWords[foundWordIndex]);
+                selectedCells.forEach(cell => cell.element.classList.remove('selected'));
+                selectedCells.forEach(cell => cell.element.classList.add('correct'));
+                selectedCells = [];
+                score += 10;
+                scoreElement.textContent = score;
+                showStar();
+            } else if (selectedWord.length === Math.max(...selectedWords.map(w => w.length))) {
+                alert('¡Uffs! Muy cerca. Sigue intentando.');
+                selectedCells.forEach(cell => cell.element.classList.remove('selected'));
+                selectedCells = [];
+            }
+        }
+
+        function markWordAsFound(word) {
+            const wordElements = wordListElement.getElementsByClassName('word');
+            for (let element of wordElements) {
+                if (element.textContent === word) {
+                    element.classList.add('found');
+                    break;
+                }
+            }
+        }
+
+        function showStar() {
+            const star = document.createElement('div');
+            star.textContent = '⭐';
+            star.style.position = 'fixed';
+            star.style.left = `${Math.random() * window.innerWidth}px`;
+            star.style.top = `${Math.random() * window.innerHeight}px`;
+            star.style.fontSize = '40px';
+            star.style.transition = 'all 1s ease-out';
+            document.body.appendChild(star);
+
+            setTimeout(() => {
+                star.style.transform = 'translateY(-100px)';
+                star.style.opacity = '0';
+            }, 50);
+
+            setTimeout(() => {
+                document.body.removeChild(star);
+            }, 1050);
+        }
+
+        function updateTimer() {
+            const minutes = Math.floor(timeLeft / 60);
+            const seconds = timeLeft % 60;
+            timerElement.textContent = `${minutes}:${seconds.toString().padStart(2, '0')}`;
+            if (timeLeft > 0) {
+                timeLeft--;
+                setTimeout(updateTimer, 1000);
+            } else {
+                alert('¡Tiempo agotado!');
+                initializeGame();
+            }
+        }
+
+        refreshButton.addEventListener('click', initializeGame);
+
+        initializeGame();
+    </script>
+</body>
+</html>
